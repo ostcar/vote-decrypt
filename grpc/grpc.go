@@ -1,3 +1,6 @@
+// Package grpc implements the gRPC service.
+//
+// The service is started with `RunServer()`
 package grpc
 
 import (
@@ -20,9 +23,7 @@ func RunServer(ctx context.Context, decrypt *decrypt.Decrypt, addr string) error
 	}
 
 	registrar := grpc.NewServer()
-	decryptServer := grpcServer{decrypt}
-
-	RegisterDecryptServer(registrar, decryptServer)
+	RegisterDecryptServer(registrar, grpcServer{decrypt})
 
 	wait := make(chan struct{})
 	go func() {
@@ -42,6 +43,8 @@ func RunServer(ctx context.Context, decrypt *decrypt.Decrypt, addr string) error
 }
 
 // Client holds the connection to a decrypt server.
+//
+// This is not needed vote vote-decrypt but is used by the vote-service.
 type Client struct {
 	decryptClient DecryptClient
 }
@@ -55,8 +58,7 @@ func NewClient(addr string) (*Client, func() error, error) {
 		return nil, nil, fmt.Errorf("creating connection to decrypt service: %w", err)
 	}
 
-	decrypter := NewDecryptClient(conn)
-	return &Client{decryptClient: decrypter}, conn.Close, nil
+	return &Client{decryptClient: NewDecryptClient(conn)}, conn.Close, nil
 }
 
 // Start calls the Start grpc message.
@@ -97,7 +99,7 @@ func (s grpcServer) grpcError(err error) error {
 	// TODO: Set the logger on initialization.
 	log.Printf("GRPC: %v", err)
 
-	// currently, all errors are internal
+	// Currently, all errors are internal
 	return status.Error(codes.Internal, "Ups, someting went wrong!")
 }
 

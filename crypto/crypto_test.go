@@ -65,10 +65,7 @@ func TestSign(t *testing.T) {
 
 	data := []byte("this is my value")
 
-	sig, err := c.Sign(data)
-	if err != nil {
-		t.Fatalf("signing: %v", err)
-	}
+	sig := c.Sign(data)
 
 	if !ed25519.Verify(ed25519.NewKeyFromSeed(mockMainKey()).Public().(ed25519.PublicKey), data, sig) {
 		t.Errorf("signature does not match public key")

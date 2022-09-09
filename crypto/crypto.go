@@ -1,3 +1,13 @@
+// Package crypto implements the cryptographic methods needed by the service.
+//
+// The crypto object has to be initialized with crypto.New(MAIN_KEY,
+// RANDOM_SOURCE).
+//
+// The main porpuse of this package is to handle the main key, create short
+// living poll keys and decrypt single votes that where encrypted with this poll
+// key.
+//
+// This package uses x25519 for decryption and ed25519 for signing.
 package crypto
 
 import (
@@ -32,6 +42,8 @@ func New(mainKey []byte, random io.Reader) Crypto {
 }
 
 // CreatePollKey creates a new keypair for a poll.
+//
+// This implementation returns the first 32 bytes from the random source.
 func (c Crypto) CreatePollKey() ([]byte, error) {
 	key := make([]byte, 32)
 	if _, err := io.ReadFull(c.random, key); err != nil {
@@ -58,7 +70,7 @@ func (c Crypto) PublicPollKey(privateKey []byte) (pubKey []byte, pubKeySig []byt
 //
 // ciphertext contains three values on fixed sizes on the byte-slice. The first
 // 32 bytes is the public empheral key from the client. The next 12 byte is the
-// used nonce for aes-gcm. All later bytes is the encrypted vote.
+// used nonce for aes-gcm. All later bytes are the encrypted vote.
 func (c Crypto) Decrypt(privateKey []byte, ciphertext []byte) ([]byte, error) {
 	if len(ciphertext) < pubKeySize+nonceSize+aes.BlockSize {
 		return nil, fmt.Errorf("invalid cipher")
@@ -91,14 +103,20 @@ func (c Crypto) Decrypt(privateKey []byte, ciphertext []byte) ([]byte, error) {
 }
 
 // Sign returns the signature for the given data.
-func (c Crypto) Sign(value []byte) ([]byte, error) {
-	return ed25519.Sign(c.mainKey, value), nil
+func (c Crypto) Sign(value []byte) []byte {
+	return ed25519.Sign(c.mainKey, value)
 }
 
 // Encrypt creates a cyphertext from plaintext using the given public key.
 //
 // This method is not needed or used by the decrypt service. It is only
 // implemented in this package for debugging and testing.
+//
+// It creates a new shared key by creating a new random private key and the
+// given public key.
+//
+// It returns the created public key (32 byte) the noonce (12 byte) and the
+// encrypted value of the given plaintext.
 func Encrypt(random io.Reader, publicKey []byte, plaintext []byte) ([]byte, error) {
 	cipherPrefix := make([]byte, pubKeySize+nonceSize)
 
@@ -112,6 +130,8 @@ func Encrypt(random io.Reader, publicKey []byte, plaintext []byte) ([]byte, erro
 		return nil, fmt.Errorf("creating ephemeral public key: %w", err)
 	}
 	copy(cipherPrefix[:pubKeySize], ephemeralPublicKey)
+
+	// TODO: The ephemeral provate key has to be hashed before creating the shared key with it.
 
 	sharedKey, err := curve25519.X25519(ephemeralPrivateKey, publicKey)
 	if err != nil {

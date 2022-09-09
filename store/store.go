@@ -1,3 +1,5 @@
+// Package store is a storrage backend for vote-decrypt that uses the file
+// system.
 package store
 
 import (

@@ -1,3 +1,7 @@
+// Package decrypt implements the protocoll of the service to start a poll and
+// decrypt a list of votes.
+//
+// The service as to be initialized with decrypt.New(crypto_backend, storage_backend, [options...]).
 package decrypt
 
 import (
@@ -28,7 +32,6 @@ type Decrypt struct {
 }
 
 // New returns the initialized decrypt component.
-// TODO: Limit allowed chars to id: only a-zA-Z0-9 and /
 func New(crypto Crypto, store Store, options ...Option) *Decrypt {
 	d := Decrypt{
 		crypto:            crypto,
@@ -49,9 +52,17 @@ func New(crypto Crypto, store Store, options ...Option) *Decrypt {
 
 // Start starts the poll. Returns a public poll key.
 //
-// It saves the poll meta data and generates a cryptographic key and returns the
-// public key.
+// It generates a cryptographic key, saves the poll meta data and returns the
+// public key. It also returns a signature of the public key created with the
+// main key.
+//
+// If the method is called multiple times with the same pollID, it returns the
+// same public key. This is at least true until Clear() is called.
 func (d *Decrypt) Start(ctx context.Context, pollID string) (pubKey []byte, pubKeySig []byte, err error) {
+	if err := d.validateID(pollID); err != nil {
+		return nil, nil, fmt.Errorf("invalid poll id: %w", err)
+	}
+
 	// TODO: Load Key and CreatePoll Key have probably be atomic.
 	pollKey, err := d.store.LoadKey(pollID)
 	if err != nil {
@@ -80,6 +91,10 @@ func (d *Decrypt) Start(ctx context.Context, pollID string) (pubKey []byte, pubK
 
 // Stop takes a list of ecrypted votes, decryptes them and returns them in a
 // random order together with a signature.
+//
+// If the function is called multiple times with the same pollID and voteList,
+// it returns the same output. But if fails if it is called with different
+// votes.
 func (d *Decrypt) Stop(ctx context.Context, pollID string, voteList [][]byte) (decryptedContent, signature []byte, err error) {
 	pollKey, err := d.store.LoadKey(pollID)
 	if err != nil {
@@ -100,11 +115,11 @@ func (d *Decrypt) Stop(ctx context.Context, pollID string, voteList [][]byte) (d
 		return nil, nil, fmt.Errorf("creating content: %w", err)
 	}
 
-	signature, err = d.crypto.Sign(decryptedContent)
-	if err != nil {
-		return nil, nil, fmt.Errorf("signing votes")
-	}
+	signature = d.crypto.Sign(decryptedContent)
 
+	// This has to be the last step of this function to protect agains timing
+	// attacks. All other steps have to be run, even when the calll is doomed to
+	// fail in this step
 	if err := d.store.ValidateSignature(pollID, signature); err != nil {
 		return nil, nil, fmt.Errorf("validate signature: %w", err)
 	}
@@ -120,8 +135,9 @@ func (d *Decrypt) Clear(ctx context.Context, pollID string) error {
 	return nil
 }
 
+// randInt returns a random int between 0 and n from a random source like crypt.Reader
 func randInt(source io.Reader, n int) (int, error) {
-	if n == 0 {
+	if n <= 0 {
 		return 0, nil
 	}
 
@@ -138,8 +154,9 @@ func randInt(source io.Reader, n int) (int, error) {
 //
 // Uses `d.decrptWorkers` parallel goroutines.
 func (d *Decrypt) decryptVotes(key []byte, voteList [][]byte) ([][]byte, error) {
-	// Read votes from voteList in random order.
 	voteChan := make(chan []byte, 1)
+
+	// Choose a random vote from the voteList and sends them to voteChan.
 	go func() {
 		defer close(voteChan)
 
@@ -157,7 +174,8 @@ func (d *Decrypt) decryptVotes(key []byte, voteList [][]byte) ([][]byte, error) 
 		}
 	}()
 
-	// decrypt votes in parallel
+	// Decrypt votes in parallel using multiple "decrypt workers". Receiving the
+	// votes from voteChan and sending them to decryptedChan.
 	var wg sync.WaitGroup
 	wg.Add(d.decryptWorkers)
 	decryptedChan := make(chan []byte, 1)
@@ -167,6 +185,7 @@ func (d *Decrypt) decryptVotes(key []byte, voteList [][]byte) ([][]byte, error) 
 			for vote := range voteChan {
 				decrypted, err := d.crypto.Decrypt(key, vote)
 				if err != nil {
+					// TODO: Is is allowed to log the error?
 					decrypted = d.decryptErrorValue
 				}
 
@@ -175,6 +194,7 @@ func (d *Decrypt) decryptVotes(key []byte, voteList [][]byte) ([][]byte, error) 
 		}()
 	}
 
+	// Close the decryptedChan when all the decryption is done.
 	go func() {
 		wg.Wait()
 		close(decryptedChan)
@@ -215,10 +235,10 @@ type Crypto interface {
 	Decrypt(key []byte, value []byte) ([]byte, error)
 
 	// Returns the signature for the given data.
-	Sign(value []byte) ([]byte, error)
+	Sign(value []byte) []byte
 }
 
-// Store saves the data, that have to be persistend.
+// Store saves the data, that have to be persistent.
 type Store interface {
 	// SaveKey stores the private key.
 	//
@@ -245,6 +265,7 @@ type Store interface {
 	ClearPoll(id string) error
 }
 
+// jsonListToContent creates one byte slice from a list of votes in json format.
 func jsonListToContent(pollID string, decrypted [][]byte) ([]byte, error) {
 	votes := make([]json.RawMessage, len(decrypted))
 	for i, vote := range decrypted {

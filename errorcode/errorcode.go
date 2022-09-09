@@ -1,3 +1,4 @@
+// Package errorcode implements standard errors for the module.
 package errorcode
 
 const (

@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 
-option go_package = "github.com/OpenSlides/openslides-vote-service/decrypt/grpc";
+option go_package = "github.com/OpenSlides/vote-decrypt/grpc";
 
 service Decrypt {
   rpc Start(StartRequest) returns (StartResponse);

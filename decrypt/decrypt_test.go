@@ -6,8 +6,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/OpenSlides/openslides-vote-service/decrypt"
-	"github.com/OpenSlides/openslides-vote-service/decrypt/errorcode"
+	"github.com/OpenSlides/vote-decrypt/decrypt"
+	"github.com/OpenSlides/vote-decrypt/errorcode"
 )
 
 // TODO: test concurency.

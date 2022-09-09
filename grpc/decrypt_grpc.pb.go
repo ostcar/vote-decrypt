@@ -167,5 +167,5 @@ var Decrypt_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "decrypt/grpc/decrypt.proto",
+	Metadata: "grpc/decrypt.proto",
 }

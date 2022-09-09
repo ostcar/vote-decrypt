@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/OpenSlides/openslides-vote-service/decrypt/errorcode"
+	"github.com/OpenSlides/vote-decrypt/errorcode"
 )
 
 type cryptoMock struct{}
@@ -36,8 +36,8 @@ func (c cryptoMock) Decrypt(key []byte, value []byte) ([]byte, error) {
 }
 
 // Returns the signature for the given data.
-func (c cryptoMock) Sign(value []byte) ([]byte, error) {
-	return []byte(fmt.Sprintf("sig:%s", value)), nil
+func (c cryptoMock) Sign(value []byte) []byte {
+	return []byte(fmt.Sprintf("sig:%s", value))
 }
 
 type StoreMock struct {
