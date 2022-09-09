@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+
+option go_package = "github.com/OpenSlides/openslides-vote-service/decrypt/grpc";
+
+service Decrypt {
+  rpc Start(StartRequest) returns (StartResponse);
+  rpc Stop(StopRequest) returns (StopResponse);
+  rpc Clear(ClearRequest) returns (ClearResponse);
+}
+
+message StartRequest {
+  string id = 1;
+}
+
+message StartResponse {
+  bytes pub_key = 1;
+  bytes pub_sig = 2;
+}
+
+message StopRequest {
+  string id = 1;
+  repeated bytes votes = 2;
+}
+
+message StopResponse {
+  bytes votes = 1;
+  bytes signature = 2;
+}
+
+message ClearRequest {
+  string id = 1;
+}
+
+message ClearResponse {}
