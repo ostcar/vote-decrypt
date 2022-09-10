@@ -7,6 +7,7 @@ package decrypt
 import (
 	"context"
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -87,6 +88,8 @@ func (d *Decrypt) Start(ctx context.Context, pollID string) (pubKey []byte, pubK
 		return nil, nil, fmt.Errorf("signing pub key: %w", err)
 	}
 
+	// Log the pubKey as base64 as long as the backend does not support his
+	log.Printf("public poll key for poll %s is %s", pollID, base64.StdEncoding.EncodeToString(pubKey))
 	return pubKey, pubKeySig, nil
 }
 
