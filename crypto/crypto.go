@@ -107,7 +107,7 @@ func (c Crypto) Decrypt(privateKey []byte, ciphertext []byte) ([]byte, error) {
 
 	plaintext, err := mode.Open(nil, nonce, ciphertext[pubKeySize+nonceSize:], nil)
 	if err != nil {
-		return nil, fmt.Errorf("decrypting plaintext: %w", err)
+		return nil, fmt.Errorf("decrypting ciphertext: %w", err)
 	}
 
 	return plaintext, nil
