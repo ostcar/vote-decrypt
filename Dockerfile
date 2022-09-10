@@ -27,8 +27,9 @@ LABEL org.opencontainers.image.description="Vote Decrypt decryptes a list of vot
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.source="https://github.com/OpenSlides/vote-decrypt"
 
-COPY --from=builder /root/vote-decrypt .
+COPY --from=base /root/vote-decrypt .
 EXPOSE 9014
 
 # TODO: Read key file
-ENTRYPOINT ["/vote-service"]
+ENTRYPOINT ["/vote-decrypt"]
+CMD ["/run/secrets/vote_main_key"]
