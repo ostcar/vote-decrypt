@@ -14,10 +14,12 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/ed25519"
+	"crypto/sha256"
 	"fmt"
 	"io"
 
 	"golang.org/x/crypto/curve25519"
+	"golang.org/x/crypto/hkdf"
 )
 
 const (
@@ -71,6 +73,9 @@ func (c Crypto) PublicPollKey(privateKey []byte) (pubKey []byte, pubKeySig []byt
 // ciphertext contains three values on fixed sizes on the byte-slice. The first
 // 32 bytes is the public empheral key from the client. The next 12 byte is the
 // used nonce for aes-gcm. All later bytes are the encrypted vote.
+//
+// This function uses x25519 as described in rfc 7748. It uses hkdf with sha256
+// for the key derivation.
 func (c Crypto) Decrypt(privateKey []byte, ciphertext []byte) ([]byte, error) {
 	if len(ciphertext) < pubKeySize+nonceSize+aes.BlockSize {
 		return nil, fmt.Errorf("invalid cipher")
@@ -79,12 +84,18 @@ func (c Crypto) Decrypt(privateKey []byte, ciphertext []byte) ([]byte, error) {
 	ephemeralPublicKey := ciphertext[:pubKeySize]
 	nonce := ciphertext[pubKeySize : pubKeySize+nonceSize]
 
-	sharedKey, err := curve25519.X25519(privateKey, ephemeralPublicKey)
+	sharedSecred, err := curve25519.X25519(privateKey, ephemeralPublicKey)
 	if err != nil {
 		return nil, fmt.Errorf("creating shared secred: %w", err)
 	}
 
-	block, err := aes.NewCipher(sharedKey)
+	hkdf := hkdf.New(sha256.New, sharedSecred, nil, nil)
+	key := make([]byte, 16)
+	if _, err := io.ReadFull(hkdf, key); err != nil {
+		return nil, fmt.Errorf("generate key with hkdf: %w", err)
+	}
+
+	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, fmt.Errorf("creating aes chipher: %w", err)
 	}
@@ -131,14 +142,18 @@ func Encrypt(random io.Reader, publicKey []byte, plaintext []byte) ([]byte, erro
 	}
 	copy(cipherPrefix[:pubKeySize], ephemeralPublicKey)
 
-	// TODO: The ephemeral provate key has to be hashed before creating the shared key with it.
-
-	sharedKey, err := curve25519.X25519(ephemeralPrivateKey, publicKey)
+	sharedSecred, err := curve25519.X25519(ephemeralPrivateKey, publicKey)
 	if err != nil {
 		return nil, fmt.Errorf("creating shared secred: %w", err)
 	}
 
-	block, err := aes.NewCipher(sharedKey)
+	hkdf := hkdf.New(sha256.New, sharedSecred, nil, nil)
+	key := make([]byte, 16)
+	if _, err := io.ReadFull(hkdf, key); err != nil {
+		return nil, fmt.Errorf("generate key with hkdf: %w", err)
+	}
+
+	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, fmt.Errorf("creating aes chipher: %w", err)
 	}
