@@ -58,7 +58,7 @@ func (c Crypto) CreatePollKey() ([]byte, error) {
 func (c Crypto) PublicPollKey(privateKey []byte) (pubKey []byte, pubKeySig []byte, err error) {
 	pubKey, err = curve25519.X25519(privateKey, curve25519.Basepoint)
 	if err != nil {
-		return nil, nil, fmt.Errorf("creating public key: %w", err)
+		return nil, nil, fmt.Errorf("calculating public key: %w", err)
 	}
 
 	pubKeySig = ed25519.Sign(c.mainKey, pubKey)

@@ -104,7 +104,7 @@ func (s grpcServer) grpcError(err error) error {
 }
 
 func (s grpcServer) Start(ctx context.Context, req *StartRequest) (*StartResponse, error) {
-	log.Println("Start request")
+	log.Printf("Start request for id %s", req.Id)
 	pubKey, pubKeySig, err := s.decrypt.Start(ctx, req.Id)
 	if err != nil {
 		return nil, s.grpcError(fmt.Errorf("starting vote: %w", err))
@@ -117,7 +117,7 @@ func (s grpcServer) Start(ctx context.Context, req *StartRequest) (*StartRespons
 }
 
 func (s grpcServer) Stop(ctx context.Context, req *StopRequest) (*StopResponse, error) {
-	log.Println("Stop request")
+	log.Printf("Stop request for id %s", req.Id)
 	decrypted, signature, err := s.decrypt.Stop(ctx, req.Id, req.Votes)
 	if err != nil {
 		return nil, s.grpcError(fmt.Errorf("stopping vote: %w", err))
@@ -130,7 +130,7 @@ func (s grpcServer) Stop(ctx context.Context, req *StopRequest) (*StopResponse, 
 }
 
 func (s grpcServer) Clear(ctx context.Context, req *ClearRequest) (*ClearResponse, error) {
-	log.Println("Clear request")
+	log.Printf("Stop request for id %s", req.Id)
 	err := s.decrypt.Clear(ctx, req.Id)
 	if err != nil {
 		return nil, s.grpcError(fmt.Errorf("clearing vote: %w", err))

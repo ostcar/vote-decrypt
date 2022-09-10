@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"math"
 	"math/big"
 	"runtime"
@@ -186,6 +187,7 @@ func (d *Decrypt) decryptVotes(key []byte, voteList [][]byte) ([][]byte, error) 
 				decrypted, err := d.crypto.Decrypt(key, vote)
 				if err != nil {
 					// TODO: Is is allowed to log the error?
+					log.Printf("TODO: %v", err)
 					decrypted = d.decryptErrorValue
 				}
 
@@ -216,8 +218,8 @@ func (d *Decrypt) validateID(id string) error {
 		if !((c >= 'a' && c <= 'z') ||
 			(c >= 'A' && c <= 'Z') ||
 			(c >= '0' && c <= '9') ||
-			c == '/') {
-			return fmt.Errorf("id contains invalid character: %w", errorcode.Invalid)
+			c == '/' || c == '.') {
+			return fmt.Errorf("id contains invalid character %c: %w", c, errorcode.Invalid)
 		}
 	}
 	return nil
