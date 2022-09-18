@@ -30,6 +30,5 @@ LABEL org.opencontainers.image.source="https://github.com/OpenSlides/vote-decryp
 COPY --from=base /root/vote-decrypt .
 EXPOSE 9014
 
-# TODO: Read key file
 ENTRYPOINT ["/vote-decrypt"]
 CMD ["/run/secrets/vote_main_key"]

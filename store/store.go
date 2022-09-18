@@ -158,10 +158,10 @@ func (s *Store) ClearPoll(id string) error {
 
 func (s *Store) keyFile(id string) string {
 	id = strings.ReplaceAll(id, "/", "_")
-	return path.Join(s.path, id+"_key")
+	return path.Join(s.path, id+".key")
 }
 
 func (s *Store) hashFile(id string) string {
 	id = strings.ReplaceAll(id, "/", "_")
-	return path.Join(s.path, id+"_hash")
+	return path.Join(s.path, id+".hash")
 }

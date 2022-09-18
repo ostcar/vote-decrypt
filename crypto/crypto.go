@@ -43,6 +43,11 @@ func New(mainKey []byte, random io.Reader) Crypto {
 	}
 }
 
+// PublicMainKey returns the public key for the private main key.
+func (c Crypto) PublicMainKey() []byte {
+	return c.mainKey.Public().(ed25519.PublicKey)
+}
+
 // CreatePollKey creates a new keypair for a poll.
 //
 // This implementation returns the first 32 bytes from the random source.
