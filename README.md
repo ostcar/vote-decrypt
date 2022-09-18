@@ -90,6 +90,61 @@ When a poll is stopped, a `.hash`-file is created. It contains the signature for
 the poll result. The file makes sure, that stop can not be called with different data.
 
 
+## gRPC interface
+
+The service can be reached via [gRPC](https://grpc.io/). The proto file can be
+found in the folder
+[grpc/decrypt.proto](https://github.com/OpenSlides/vote-decrypt/blob/main/grpc/decrypt.proto).
+
+It contains three methods. `Start`, `Stop`, and `Clean`.
+
+### Start
+
+Start has to be called at the beginning of a poll. It tells the vote-decrypt server to start accepting votes.
+
+The method returns the public poll key and its signature. The signature can be
+validated with the public main key.
+
+
+### Stop
+
+Stop has to be called to finish the poll. It expects a list of votes. 
+
+The method call be called multiple times, but only with the same payload. It is
+not possible to call it with different votes.
+
+The method returns the decrypted votes as one blob of data and it signature. The
+signature can be validated with the public main key.
+
+
+### Clear
+
+Clear should be called after stop to remove all poll related data.
+
+
+## Poll Workflow
+
+A poll with vote-decrypt has three parties. The clients, the poll manager and
+vote-decrypt:
+
+1.  The clients have to receive the public main key via a secure channel.
+2.  The poll manager start a poll by calling `Start`.
+3.  The poll manager distributes the public poll key to the clients.
+4.  The clients validate the public poll key with its signature and the main key.
+5.  The clients create there vote and encrypt them with the public poll key.
+6.  The clients send the encrypted votes to the poll manager.
+7.  After the poll manager received all votes, he sends them to vote-decrypt by
+    calling the `Stop`method.
+8.  The poll manager receives the decrypted vote list and distributes them to
+    the clients as a blob.
+9.  The clients validate the vote blob with its signature and the main key.
+10. The clients evaulute the poll.
+
+To evalute the vote blob, the clients make sure that there value are in the blob
+and where therefore respected. The signed blob contains a poll-id that the
+client use to make sure, that the blob is for the correct poll.
+
+
 ## Configuration
 
 ### Environment Variables
@@ -98,3 +153,10 @@ The service uses the following enironment variables:
 
 * `VOTE_DECRYPT_PORT`: Port for the gRPC serice to listen to. Default is `9014`.
 * `VOTE_DECRYPT_STORE`: Folder to store the poll keys. Default is `vote_data`.
+
+
+## TODOs:
+
+* Fix the Stop method to hash the input instead of the output.
+* Fix more timing attacks.
+* Write a postgres storage backend.

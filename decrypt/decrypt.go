@@ -99,6 +99,8 @@ func (d *Decrypt) Start(ctx context.Context, pollID string) (pubKey []byte, pubK
 // If the function is called multiple times with the same pollID and voteList,
 // it returns the same output. But if fails if it is called with different
 // votes.
+//
+// TODO: This implementation is wrong. Not the output has to be hashed and saved, but the input.
 func (d *Decrypt) Stop(ctx context.Context, pollID string, voteList [][]byte) (decryptedContent, signature []byte, err error) {
 	pollKey, err := d.store.LoadKey(pollID)
 	if err != nil {
