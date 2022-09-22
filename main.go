@@ -50,7 +50,7 @@ var cli struct {
 		MainKey *os.File `arg:"" help:"Path to the main key file."`
 
 		Port  int    `help:"Port for the server. Defaults to 9014." short:"p" env:"VOTE_DECRYPT_PORT" default:"9014"`
-		Store string `help:"Path for the file system storage of poll keys." env:"VOTE_DECRYPT_STORE"`
+		Store string `help:"Path for the file system storage of poll keys." env:"VOTE_DECRYPT_STORE" default:"vote_data"`
 	} `cmd:"" help:"Starts the vote decrypt grpc server." default:"withargs"`
 
 	MainKey struct {

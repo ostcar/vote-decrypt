@@ -125,7 +125,7 @@ func (c Crypto) Sign(value []byte) []byte {
 
 // Encrypt creates a cyphertext from plaintext using the given public key.
 //
-// This method is not needed or used by the decrypt service. It is only
+// This function is not needed or used by the decrypt service. It is only
 // implemented in this package for debugging and testing.
 //
 // It creates a new shared key by creating a new random private key and the
@@ -176,4 +176,12 @@ func Encrypt(random io.Reader, publicKey []byte, plaintext []byte) ([]byte, erro
 	encrypted := mode.Seal(nil, nonce, plaintext, nil)
 
 	return append(cipherPrefix, encrypted...), nil
+}
+
+// Verify checks that the the signature was created with pubKey for the message.
+//
+// This function is not needed or used by the decrypt service. It is only
+// implemented in this package for debugging and testing.
+func Verify(pubKey, message, signature []byte) bool {
+	return ed25519.Verify(pubKey, message, signature)
 }

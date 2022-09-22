@@ -46,8 +46,12 @@ func (s *Store) SaveKey(id string, key []byte) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	if s.path == "" {
+		return fmt.Errorf("No data dir provided. Check the environment variable VOTE_DECRYPT_STORE")
+	}
+
 	if err := os.MkdirAll(s.path, os.ModePerm); err != nil {
-		return fmt.Errorf("creating data dir: %w", err)
+		return fmt.Errorf("creating data dir `%s`: %w", s.path, err)
 	}
 
 	f, err := os.OpenFile(s.keyFile(id), os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0400)
