@@ -70,8 +70,12 @@ func runServer(ctx context.Context) error {
 		return fmt.Errorf("reading key: %w", err)
 	}
 
+	cryptoLib := crypto.New(key, rand.Reader)
+
+	fmt.Printf("Public Main Key: %s", cryptoLib.PublicMainKey())
+
 	decrypter := decrypt.New(
-		crypto.New(key, rand.Reader),
+		cryptoLib,
 		store.New(cli.Server.Store),
 	)
 

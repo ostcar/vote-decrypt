@@ -127,6 +127,9 @@ func (d *Decrypt) Stop(ctx context.Context, pollID string, voteList [][]byte) (d
 	// attacks. All other steps have to be run, even when the calll is doomed to
 	// fail in this step
 	if err := d.store.ValidateSignature(pollID, signature); err != nil {
+		if errors.Is(err, errorcode.Invalid) {
+			return nil, nil, fmt.Errorf("stop was called with different parameters before")
+		}
 		return nil, nil, fmt.Errorf("validate signature: %w", err)
 	}
 
@@ -192,7 +195,7 @@ func (d *Decrypt) decryptVotes(key []byte, voteList [][]byte) ([][]byte, error) 
 				decrypted, err := d.crypto.Decrypt(key, vote)
 				if err != nil {
 					// TODO: Is is allowed to log the error?
-					log.Printf("TODO: %v", err)
+					log.Printf("TODO: vote: %v: %v", vote, err)
 					decrypted = d.decryptErrorValue
 				}
 

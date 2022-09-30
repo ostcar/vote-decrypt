@@ -160,3 +160,4 @@ The service uses the following enironment variables:
 * Fix the Stop method to hash the input instead of the output.
 * Fix more timing attacks.
 * Write a postgres storage backend.
+* Write errors messages as output.
