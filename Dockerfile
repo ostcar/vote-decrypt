@@ -16,7 +16,7 @@ FROM base as development
 RUN ["go", "install", "github.com/githubnemo/CompileDaemon@latest"]
 EXPOSE 9014
 
-CMD CompileDaemon -log-prefix=false -command="./vote-decrypt"
+CMD CompileDaemon -log-prefix=false -command="./vote-decrypt /run/secrets/vote_main_key"
 
 
 # Productive build
