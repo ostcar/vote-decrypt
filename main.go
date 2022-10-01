@@ -72,7 +72,7 @@ func runServer(ctx context.Context) error {
 
 	cryptoLib := crypto.New(key, rand.Reader)
 
-	fmt.Printf("Public Main Key: %s", base64.StdEncoding.EncodeToString(cryptoLib.PublicMainKey()))
+	fmt.Printf("Public Main Key: %s\n", base64.StdEncoding.EncodeToString(cryptoLib.PublicMainKey()))
 
 	decrypter := decrypt.New(
 		cryptoLib,
