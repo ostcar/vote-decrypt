@@ -1,0 +1,17 @@
+name: Check Docker build
+on: [pull_request]
+jobs:
+  docker:
+    name: Docker
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v3
+
+    - name: Start With Docker
+      run: |
+        docker build . --tag vote-decrypt
+        timeout --preserve-status --signal=SIGINT 3s docker run vote-decrypt vote-decrypt
+      env:
+        DOCKER_BUILDKIT: 1
