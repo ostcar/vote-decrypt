@@ -18,9 +18,10 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type DecryptClient interface {
+	PublicMainKey(ctx context.Context, in *EmptyMessage, opts ...grpc.CallOption) (*PublicMainKeyResponse, error)
 	Start(ctx context.Context, in *StartRequest, opts ...grpc.CallOption) (*StartResponse, error)
 	Stop(ctx context.Context, in *StopRequest, opts ...grpc.CallOption) (*StopResponse, error)
-	Clear(ctx context.Context, in *ClearRequest, opts ...grpc.CallOption) (*ClearResponse, error)
+	Clear(ctx context.Context, in *ClearRequest, opts ...grpc.CallOption) (*EmptyMessage, error)
 }
 
 type decryptClient struct {
@@ -29,6 +30,15 @@ type decryptClient struct {
 
 func NewDecryptClient(cc grpc.ClientConnInterface) DecryptClient {
 	return &decryptClient{cc}
+}
+
+func (c *decryptClient) PublicMainKey(ctx context.Context, in *EmptyMessage, opts ...grpc.CallOption) (*PublicMainKeyResponse, error) {
+	out := new(PublicMainKeyResponse)
+	err := c.cc.Invoke(ctx, "/Decrypt/PublicMainKey", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *decryptClient) Start(ctx context.Context, in *StartRequest, opts ...grpc.CallOption) (*StartResponse, error) {
@@ -49,8 +59,8 @@ func (c *decryptClient) Stop(ctx context.Context, in *StopRequest, opts ...grpc.
 	return out, nil
 }
 
-func (c *decryptClient) Clear(ctx context.Context, in *ClearRequest, opts ...grpc.CallOption) (*ClearResponse, error) {
-	out := new(ClearResponse)
+func (c *decryptClient) Clear(ctx context.Context, in *ClearRequest, opts ...grpc.CallOption) (*EmptyMessage, error) {
+	out := new(EmptyMessage)
 	err := c.cc.Invoke(ctx, "/Decrypt/Clear", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -62,22 +72,26 @@ func (c *decryptClient) Clear(ctx context.Context, in *ClearRequest, opts ...grp
 // All implementations should embed UnimplementedDecryptServer
 // for forward compatibility
 type DecryptServer interface {
+	PublicMainKey(context.Context, *EmptyMessage) (*PublicMainKeyResponse, error)
 	Start(context.Context, *StartRequest) (*StartResponse, error)
 	Stop(context.Context, *StopRequest) (*StopResponse, error)
-	Clear(context.Context, *ClearRequest) (*ClearResponse, error)
+	Clear(context.Context, *ClearRequest) (*EmptyMessage, error)
 }
 
 // UnimplementedDecryptServer should be embedded to have forward compatible implementations.
 type UnimplementedDecryptServer struct {
 }
 
+func (UnimplementedDecryptServer) PublicMainKey(context.Context, *EmptyMessage) (*PublicMainKeyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PublicMainKey not implemented")
+}
 func (UnimplementedDecryptServer) Start(context.Context, *StartRequest) (*StartResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Start not implemented")
 }
 func (UnimplementedDecryptServer) Stop(context.Context, *StopRequest) (*StopResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Stop not implemented")
 }
-func (UnimplementedDecryptServer) Clear(context.Context, *ClearRequest) (*ClearResponse, error) {
+func (UnimplementedDecryptServer) Clear(context.Context, *ClearRequest) (*EmptyMessage, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Clear not implemented")
 }
 
@@ -90,6 +104,24 @@ type UnsafeDecryptServer interface {
 
 func RegisterDecryptServer(s grpc.ServiceRegistrar, srv DecryptServer) {
 	s.RegisterService(&Decrypt_ServiceDesc, srv)
+}
+
+func _Decrypt_PublicMainKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EmptyMessage)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DecryptServer).PublicMainKey(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Decrypt/PublicMainKey",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DecryptServer).PublicMainKey(ctx, req.(*EmptyMessage))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _Decrypt_Start_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -153,6 +185,10 @@ var Decrypt_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "Decrypt",
 	HandlerType: (*DecryptServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "PublicMainKey",
+			Handler:    _Decrypt_PublicMainKey_Handler,
+		},
 		{
 			MethodName: "Start",
 			Handler:    _Decrypt_Start_Handler,

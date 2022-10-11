@@ -4,9 +4,14 @@ syntax = "proto3";
 option go_package = "github.com/OpenSlides/vote-decrypt/grpc";
 
 service Decrypt {
+  rpc PublicMainKey (EmptyMessage) returns (PublicMainKeyResponse);
   rpc Start(StartRequest) returns (StartResponse);
   rpc Stop(StopRequest) returns (StopResponse);
-  rpc Clear(ClearRequest) returns (ClearResponse);
+  rpc Clear(ClearRequest) returns (EmptyMessage);
+}
+
+message PublicMainKeyResponse {
+  bytes publicKey = 1;
 }
 
 message StartRequest {
@@ -32,4 +37,4 @@ message ClearRequest {
   string id = 1;
 }
 
-message ClearResponse {}
+message EmptyMessage {}
