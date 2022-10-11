@@ -42,7 +42,7 @@ func New(crypto Crypto, store Store, options ...Option) *Decrypt {
 		random:            rand.Reader,
 		maxVotes:          math.MaxInt,
 		listToContent:     jsonListToContent,
-		decryptErrorValue: []byte(`{"error":"decrypt"}`),
+		decryptErrorValue: []byte(`{"error":"encryption not valid"}`),
 	}
 
 	for _, o := range options {
@@ -50,6 +50,11 @@ func New(crypto Crypto, store Store, options ...Option) *Decrypt {
 	}
 
 	return &d
+}
+
+// PublicMainKey returns the public main key.
+func (d *Decrypt) PublicMainKey(ctx context.Context) []byte {
+	return d.crypto.PublicMainKey()
 }
 
 // Start starts the poll. Returns a public poll key.
@@ -244,8 +249,11 @@ type Crypto interface {
 	// Decrypt returned the plaintext from value using the key.
 	Decrypt(key []byte, value []byte) ([]byte, error)
 
-	// Returns the signature for the given data.
+	// Sign returns the signature for the given data.
 	Sign(value []byte) []byte
+
+	// PublicMainKey returns the public main key.
+	PublicMainKey() []byte
 }
 
 // Store saves the data, that have to be persistent.

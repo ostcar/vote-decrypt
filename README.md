@@ -31,8 +31,8 @@ docker run -v "$(pwd)"/main_key:/run/secrets/vote_main_key vote-decrypt
 
 ## Main Key File
 
-The service needs a main key. This has to be 32 random bytes. It is used to
-sign the poll keys and to sign the voting result.
+The service needs a main key. This has to be 32 random bytes. It is used to sign
+the poll keys and to sign the voting result.
 
 The main file can be created with
 
@@ -87,7 +87,8 @@ poll after it is done. If this file gets lost, it is not possible to decrypt a
 poll.
 
 When a poll is stopped, a `.hash`-file is created. It contains the signature for
-the poll result. The file makes sure, that stop can not be called with different data.
+the poll result. The file makes sure, that stop can not be called with different
+data.
 
 
 ## gRPC interface
@@ -96,11 +97,18 @@ The service can be reached via [gRPC](https://grpc.io/). The proto file can be
 found in the folder
 [grpc/decrypt.proto](https://github.com/OpenSlides/vote-decrypt/blob/main/grpc/decrypt.proto).
 
-It contains three methods. `Start`, `Stop`, and `Clean`.
+It contains three methods. `PublicMainKey`, `Start`, `Stop`, and `Clean`.
+
+### PublicMainKey
+
+PublicMainKey returns the public main key that is used to sign the poll poll
+keys and the poll results.
+
 
 ### Start
 
-Start has to be called at the beginning of a poll. It tells the vote-decrypt server to start accepting votes.
+Start has to be called at the beginning of a poll. It tells the vote-decrypt
+server to start accepting votes.
 
 The method returns the public poll key and its signature. The signature can be
 validated with the public main key.
@@ -130,7 +138,8 @@ vote-decrypt:
 1.  The clients have to receive the public main key via a secure channel.
 2.  The poll manager start a poll by calling `Start`.
 3.  The poll manager distributes the public poll key to the clients.
-4.  The clients validate the public poll key with its signature and the main key.
+4.  The clients validate the public poll key with its signature and the main
+    key.
 5.  The clients create there vote and encrypt them with the public poll key.
 6.  The clients send the encrypted votes to the poll manager.
 7.  After the poll manager received all votes, he sends them to vote-decrypt by

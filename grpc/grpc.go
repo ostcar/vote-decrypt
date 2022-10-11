@@ -129,12 +129,21 @@ func (s grpcServer) Stop(ctx context.Context, req *StopRequest) (*StopResponse, 
 	}, nil
 }
 
-func (s grpcServer) Clear(ctx context.Context, req *ClearRequest) (*ClearResponse, error) {
+func (s grpcServer) Clear(ctx context.Context, req *ClearRequest) (*EmptyMessage, error) {
 	log.Printf("Stop request for id %s", req.Id)
 	err := s.decrypt.Clear(ctx, req.Id)
 	if err != nil {
 		return nil, s.grpcError(fmt.Errorf("clearing vote: %w", err))
 	}
 
-	return new(ClearResponse), nil
+	return new(EmptyMessage), nil
+}
+
+func (s grpcServer) PublicMainKey(ctx context.Context, req *EmptyMessage) (*PublicMainKeyResponse, error) {
+	log.Printf("Public Poll Key request")
+	key := s.decrypt.PublicMainKey(ctx)
+
+	return &PublicMainKeyResponse{
+		PublicKey: key,
+	}, nil
 }

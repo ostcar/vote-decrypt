@@ -11,12 +11,12 @@ import (
 type cryptoMock struct{}
 
 // PublicMainKey returns the public main key and the signature of the key.
-func (c cryptoMock) PublicMainKey() (pubKey []byte, err error) {
-	return []byte("mainPubKey"), nil
+func (c cryptoMock) PublicMainKey() []byte {
+	return []byte("mainPubKey")
 }
 
 // CreatePollKey creates a new keypair for a poll.
-func (c cryptoMock) CreatePollKey() (key []byte, err error) {
+func (c cryptoMock) CreatePollKey() ([]byte, error) {
 	return []byte("pollKey"), nil
 }
 
