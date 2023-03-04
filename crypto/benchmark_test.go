@@ -1,10 +1,10 @@
 package crypto_test
 
 import (
+	"crypto/ecdh"
 	"testing"
 
 	"github.com/OpenSlides/vote-decrypt/crypto"
-	"golang.org/x/crypto/curve25519"
 )
 
 func benchmarkDecrypt(b *testing.B, voteCount int, voteByteSize int) {
@@ -12,11 +12,12 @@ func benchmarkDecrypt(b *testing.B, voteCount int, voteByteSize int) {
 
 	plaintext := make([]byte, voteByteSize)
 
-	privKey := make([]byte, 32)
-	pubKey, err := curve25519.X25519(privKey, curve25519.Basepoint)
+	privKey, err := ecdh.X25519().GenerateKey(randomMock{})
 	if err != nil {
-		b.Fatalf("creating public key: %v", err)
+		b.Fatalf("creating private key: %v", err)
 	}
+
+	pubKey := privKey.PublicKey().Bytes()
 
 	votes := make([][]byte, voteCount)
 	for i := 0; i < voteCount; i++ {
@@ -31,23 +32,22 @@ func benchmarkDecrypt(b *testing.B, voteCount int, voteByteSize int) {
 
 	for n := 0; n < b.N; n++ {
 		for i := 0; i < voteCount; i++ {
-			if _, err := cr.Decrypt(privKey, votes[i]); err != nil {
+			if _, err := cr.Decrypt(privKey.Bytes(), votes[i]); err != nil {
 				b.Errorf("decrypting: %v", err)
 			}
 		}
 	}
-
 }
 
-func BenchmarkDecrypt1Byte100(b *testing.B)    { benchmarkDecrypt(b, 1, 100) }
-func BenchmarkDecrypt10Byte100(b *testing.B)   { benchmarkDecrypt(b, 10, 100) }
-func BenchmarkDecrypt100Byte100(b *testing.B)  { benchmarkDecrypt(b, 100, 100) }
-func BenchmarkDecrypt1000Byte100(b *testing.B) { benchmarkDecrypt(b, 1_000, 100) }
+func BenchmarkDecrypt_1Votes_Byte100(b *testing.B)    { benchmarkDecrypt(b, 1, 100) }
+func BenchmarkDecrypt_10Votes_Byte100(b *testing.B)   { benchmarkDecrypt(b, 10, 100) }
+func BenchmarkDecrypt_100Votes_Byte100(b *testing.B)  { benchmarkDecrypt(b, 100, 100) }
+func BenchmarkDecrypt_1000Votes_Byte100(b *testing.B) { benchmarkDecrypt(b, 1_000, 100) }
 
-// func BenchmarkDecrypt10000Byte100(b *testing.B)  { benchmarkDecrypt(b, 10_000, 100) }
-// func BenchmarkDecrypt100000Byte100(b *testing.B) { benchmarkDecrypt(b, 100_000, 100) }
+// func BenchmarkDecrypt_10000Votes_Byte100(b *testing.B)  { benchmarkDecrypt(b, 10_000, 100) }
+// func BenchmarkDecrypt_100000Votes_Byte100(b *testing.B) { benchmarkDecrypt(b, 100_000, 100) }
 
-func BenchmarkDecrypt1Byte1000(b *testing.B)    { benchmarkDecrypt(b, 1, 1_000) }
-func BenchmarkDecrypt10Byte1000(b *testing.B)   { benchmarkDecrypt(b, 10, 1_000) }
-func BenchmarkDecrypt100Byte1000(b *testing.B)  { benchmarkDecrypt(b, 100, 1_000) }
-func BenchmarkDecrypt1000Byte1000(b *testing.B) { benchmarkDecrypt(b, 1_000, 1_000) }
+func BenchmarkDecrypt_1Votes_Byte1000(b *testing.B)    { benchmarkDecrypt(b, 1, 1_000) }
+func BenchmarkDecrypt_10Votes_Byte1000(b *testing.B)   { benchmarkDecrypt(b, 10, 1_000) }
+func BenchmarkDecrypt_100Votes_Byte1000(b *testing.B)  { benchmarkDecrypt(b, 100, 1_000) }
+func BenchmarkDecrypt_1000Votes_Byte1000(b *testing.B) { benchmarkDecrypt(b, 1_000, 1_000) }

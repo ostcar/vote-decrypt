@@ -1,4 +1,4 @@
-FROM golang:1.19.2-alpine as base
+FROM golang:1.20.1-alpine as base
 WORKDIR /root/
 
 RUN apk add git
@@ -8,7 +8,7 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 go build
+RUN go build
 
 # Development build.
 FROM base as development

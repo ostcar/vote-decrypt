@@ -1,11 +1,11 @@
 package crypto_test
 
 import (
+	"crypto/ecdh"
 	"crypto/ed25519"
 	"testing"
 
 	"github.com/OpenSlides/vote-decrypt/crypto"
-	"golang.org/x/crypto/curve25519"
 )
 
 func TestCreatePollKey(t *testing.T) {
@@ -39,18 +39,18 @@ func TestDecrypt(t *testing.T) {
 
 	plaintext := "this is my vote"
 
-	privKey := make([]byte, 32)
-	pubKey, err := curve25519.X25519(privKey, curve25519.Basepoint)
+	privKey, err := ecdh.X25519().GenerateKey(randomMock{})
 	if err != nil {
-		t.Fatalf("creating public key: %v", err)
+		t.Fatalf("creating private key: %v", err)
 	}
+	pubKey := privKey.PublicKey().Bytes()
 
 	encrypted, err := crypto.Encrypt(randomMock{}, pubKey, []byte(plaintext))
 	if err != nil {
 		t.Fatalf("encrypting plaintext: %v", err)
 	}
 
-	decrypted, err := c.Decrypt(privKey, encrypted)
+	decrypted, err := c.Decrypt(privKey.Bytes(), encrypted)
 	if err != nil {
 		t.Errorf("decrypt: %v", err)
 	}
@@ -73,7 +73,7 @@ func TestSign(t *testing.T) {
 }
 
 func mockPollKey() []byte {
-	return make([]byte, curve25519.PointSize)
+	return make([]byte, 32)
 }
 
 func mockMainKey() []byte {
