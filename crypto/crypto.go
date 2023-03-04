@@ -13,12 +13,12 @@ package crypto
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/ecdh"
 	"crypto/ed25519"
 	"crypto/sha256"
 	"fmt"
 	"io"
 
-	"golang.org/x/crypto/curve25519"
 	"golang.org/x/crypto/hkdf"
 )
 
@@ -63,10 +63,12 @@ func (c Crypto) CreatePollKey() ([]byte, error) {
 // PublicPollKey returns the public poll key and the signature for the given
 // key.
 func (c Crypto) PublicPollKey(privateKey []byte) (pubKey []byte, pubKeySig []byte, err error) {
-	pubKey, err = curve25519.X25519(privateKey, curve25519.Basepoint)
+	privKey, err := ecdh.X25519().NewPrivateKey(privateKey)
 	if err != nil {
-		return nil, nil, fmt.Errorf("calculating public key: %w", err)
+		return nil, nil, fmt.Errorf("parsing private poll key: %w", err)
 	}
+
+	pubKey = privKey.PublicKey().Bytes()
 
 	pubKeySig = ed25519.Sign(c.mainKey, pubKey)
 
@@ -75,9 +77,9 @@ func (c Crypto) PublicPollKey(privateKey []byte) (pubKey []byte, pubKeySig []byt
 
 // Decrypt returned the plaintext from value using the key.
 //
-// ciphertext contains three values on fixed sizes on the byte-slice. The first
-// 32 bytes is the public empheral key from the client. The next 12 byte is the
-// used nonce for aes-gcm. All later bytes are the encrypted vote.
+// ciphertext contains three values. The first 32 bytes is the public empheral
+// key from the client. The next 12 byte is the used nonce for aes-gcm. All
+// later bytes are the encrypted vote.
 //
 // This function uses x25519 as described in rfc 7748. It uses hkdf with sha256
 // for the key derivation.
@@ -86,10 +88,19 @@ func (c Crypto) Decrypt(privateKey []byte, ciphertext []byte) ([]byte, error) {
 		return nil, fmt.Errorf("invalid cipher")
 	}
 
-	ephemeralPublicKey := ciphertext[:pubKeySize]
+	ephemeralPublicKey, err := ecdh.X25519().NewPublicKey(ciphertext[:pubKeySize])
+	if err != nil {
+		return nil, fmt.Errorf("invalid publick key in ciphertext: %w", err)
+	}
+
 	nonce := ciphertext[pubKeySize : pubKeySize+nonceSize]
 
-	sharedSecred, err := curve25519.X25519(privateKey, ephemeralPublicKey)
+	privKey, err := ecdh.X25519().NewPrivateKey(privateKey)
+	if err != nil {
+		return nil, fmt.Errorf("initializing private key: %w", err)
+	}
+
+	sharedSecred, err := privKey.ECDH(ephemeralPublicKey)
 	if err != nil {
 		return nil, fmt.Errorf("creating shared secred: %w", err)
 	}
@@ -136,18 +147,19 @@ func (c Crypto) Sign(value []byte) []byte {
 func Encrypt(random io.Reader, publicKey []byte, plaintext []byte) ([]byte, error) {
 	cipherPrefix := make([]byte, pubKeySize+nonceSize)
 
-	ephemeralPrivateKey := make([]byte, curve25519.ScalarSize)
-	if _, err := io.ReadFull(random, ephemeralPrivateKey); err != nil {
-		return nil, fmt.Errorf("reading from random source: %w", err)
-	}
-
-	ephemeralPublicKey, err := curve25519.X25519(ephemeralPrivateKey, curve25519.Basepoint)
+	ephemeralPrivateKey, err := ecdh.X25519().GenerateKey(random)
 	if err != nil {
-		return nil, fmt.Errorf("creating ephemeral public key: %w", err)
+		return nil, fmt.Errorf("creating ephemeral private key: %w", err)
 	}
-	copy(cipherPrefix[:pubKeySize], ephemeralPublicKey)
 
-	sharedSecred, err := curve25519.X25519(ephemeralPrivateKey, publicKey)
+	copy(cipherPrefix[:pubKeySize], ephemeralPrivateKey.PublicKey().Bytes())
+
+	remotePublicKey, err := ecdh.X25519().NewPublicKey(publicKey)
+	if err != nil {
+		return nil, fmt.Errorf("parsing public key: %w", err)
+	}
+
+	sharedSecred, err := ephemeralPrivateKey.ECDH(remotePublicKey)
 	if err != nil {
 		return nil, fmt.Errorf("creating shared secred: %w", err)
 	}
