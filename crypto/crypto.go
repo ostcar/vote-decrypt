@@ -154,7 +154,7 @@ func (c Crypto) Sign(value []byte) []byte {
 //
 // It returns the created public key (32 byte) the noonce (12 byte) and the
 // encrypted value of the given plaintext.
-func Encrypt(random io.Reader, publicKey []byte, plaintext []byte) ([]byte, error) {
+func Encrypt(random io.Reader, publicPollKey []byte, plaintext []byte) ([]byte, error) {
 	ephemeralPrivateKey, err := curve.GenerateKey(random)
 	if err != nil {
 		return nil, fmt.Errorf("creating ephemeral private key: %w", err)
@@ -162,7 +162,7 @@ func Encrypt(random io.Reader, publicKey []byte, plaintext []byte) ([]byte, erro
 
 	cipherPrefix := ephemeralPrivateKey.PublicKey().Bytes()
 
-	remotePublicKey, err := curve.NewPublicKey(publicKey)
+	remotePublicKey, err := curve.NewPublicKey(publicPollKey)
 	if err != nil {
 		return nil, fmt.Errorf("parsing public key: %w", err)
 	}
