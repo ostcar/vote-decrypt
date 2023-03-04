@@ -1,6 +1,6 @@
 module github.com/OpenSlides/vote-decrypt
 
-go 1.19
+go 1.20
 
 require (
 	github.com/alecthomas/kong v0.6.1
