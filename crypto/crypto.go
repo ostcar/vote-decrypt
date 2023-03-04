@@ -27,6 +27,16 @@ const (
 	nonceSize  = 12
 )
 
+// curve sets the ecdh curve to use in this packages.
+//
+// In theory all curves supported from the go ecdh package could be used. But in
+// practice, only x25519 works. The reason is, that only x25519 has a fix key
+// size (the the constant pubKeySize). The ciphertext this service uses contains
+// the public key at the first `pubKeySize` bytes. With a variable size key, it
+// is not possible to know, where the key ends end the decoded bytes begin. To
+// support other curves, we have the encode the ciphertext in another way.
+var curve = ecdh.X25519()
+
 // Crypto implements all cryptographic functions needed for the decrypt service.
 type Crypto struct {
 	mainKey ed25519.PrivateKey
@@ -63,7 +73,7 @@ func (c Crypto) CreatePollKey() ([]byte, error) {
 // PublicPollKey returns the public poll key and the signature for the given
 // key.
 func (c Crypto) PublicPollKey(privateKey []byte) (pubKey []byte, pubKeySig []byte, err error) {
-	privKey, err := ecdh.X25519().NewPrivateKey(privateKey)
+	privKey, err := curve.NewPrivateKey(privateKey)
 	if err != nil {
 		return nil, nil, fmt.Errorf("parsing private poll key: %w", err)
 	}
@@ -88,14 +98,14 @@ func (c Crypto) Decrypt(privateKey []byte, ciphertext []byte) ([]byte, error) {
 		return nil, fmt.Errorf("invalid cipher")
 	}
 
-	ephemeralPublicKey, err := ecdh.X25519().NewPublicKey(ciphertext[:pubKeySize])
+	ephemeralPublicKey, err := curve.NewPublicKey(ciphertext[:pubKeySize])
 	if err != nil {
 		return nil, fmt.Errorf("invalid publick key in ciphertext: %w", err)
 	}
 
 	nonce := ciphertext[pubKeySize : pubKeySize+nonceSize]
 
-	privKey, err := ecdh.X25519().NewPrivateKey(privateKey)
+	privKey, err := curve.NewPrivateKey(privateKey)
 	if err != nil {
 		return nil, fmt.Errorf("initializing private key: %w", err)
 	}
@@ -106,7 +116,7 @@ func (c Crypto) Decrypt(privateKey []byte, ciphertext []byte) ([]byte, error) {
 	}
 
 	hkdf := hkdf.New(sha256.New, sharedSecred, nil, nil)
-	key := make([]byte, pubKeySize)
+	key := make([]byte, 32)
 	if _, err := io.ReadFull(hkdf, key); err != nil {
 		return nil, fmt.Errorf("generate key with hkdf: %w", err)
 	}
@@ -145,16 +155,14 @@ func (c Crypto) Sign(value []byte) []byte {
 // It returns the created public key (32 byte) the noonce (12 byte) and the
 // encrypted value of the given plaintext.
 func Encrypt(random io.Reader, publicKey []byte, plaintext []byte) ([]byte, error) {
-	cipherPrefix := make([]byte, pubKeySize+nonceSize)
-
-	ephemeralPrivateKey, err := ecdh.X25519().GenerateKey(random)
+	ephemeralPrivateKey, err := curve.GenerateKey(random)
 	if err != nil {
 		return nil, fmt.Errorf("creating ephemeral private key: %w", err)
 	}
 
-	copy(cipherPrefix[:pubKeySize], ephemeralPrivateKey.PublicKey().Bytes())
+	cipherPrefix := ephemeralPrivateKey.PublicKey().Bytes()
 
-	remotePublicKey, err := ecdh.X25519().NewPublicKey(publicKey)
+	remotePublicKey, err := curve.NewPublicKey(publicKey)
 	if err != nil {
 		return nil, fmt.Errorf("parsing public key: %w", err)
 	}
@@ -165,7 +173,7 @@ func Encrypt(random io.Reader, publicKey []byte, plaintext []byte) ([]byte, erro
 	}
 
 	hkdf := hkdf.New(sha256.New, sharedSecred, nil, nil)
-	key := make([]byte, pubKeySize)
+	key := make([]byte, 32)
 	if _, err := io.ReadFull(hkdf, key); err != nil {
 		return nil, fmt.Errorf("generate key with hkdf: %w", err)
 	}
@@ -175,10 +183,11 @@ func Encrypt(random io.Reader, publicKey []byte, plaintext []byte) ([]byte, erro
 		return nil, fmt.Errorf("creating aes chipher: %w", err)
 	}
 
-	nonce := cipherPrefix[pubKeySize:]
+	nonce := make([]byte, nonceSize)
 	if _, err := random.Read(nonce); err != nil {
 		return nil, fmt.Errorf("read random for nonce: %w", err)
 	}
+	cipherPrefix = append(cipherPrefix, nonce...)
 
 	mode, err := cipher.NewGCM(block)
 	if err != nil {
