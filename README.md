@@ -170,3 +170,4 @@ The service uses the following enironment variables:
 * Fix more timing attacks.
 * Write a postgres storage backend.
 * Write errors messages as output.
+* Use the main key to encrypt the stored data (poll keys and poll hashes)
