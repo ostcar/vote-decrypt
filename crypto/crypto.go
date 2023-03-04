@@ -29,12 +29,12 @@ const (
 
 // curve sets the ecdh curve to use in this packages.
 //
-// In theory all curves supported from the go ecdh package could be used. But in
-// practice, only x25519 works. The reason is, that only x25519 has a fix key
-// size (the the constant pubKeySize). The ciphertext this service uses contains
-// the public key at the first `pubKeySize` bytes. With a variable size key, it
-// is not possible to know, where the key ends end the decoded bytes begin. To
-// support other curves, we have the encode the ciphertext in another way.
+// In theory, all curves supported from the go ecdh package could be used. But
+// in practice, only x25519 works. The reason is, that only x25519 has a fix key
+// size (see the constant pubKeySize). The ciphertext contains the public key at
+// the first `pubKeySize` bytes. With a variable size key, it is not possible to
+// know, where the key ends end the decoded bytes start. To support other
+// curves, we have the encode the ciphertext in another way.
 var curve = ecdh.X25519()
 
 // Crypto implements all cryptographic functions needed for the decrypt service.

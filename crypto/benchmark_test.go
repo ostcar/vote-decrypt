@@ -12,7 +12,7 @@ func benchmarkDecrypt(b *testing.B, voteCount int, voteByteSize int) {
 
 	plaintext := make([]byte, voteByteSize)
 
-	privKey, err := ecdh.X25519().NewPrivateKey(make([]byte, 32))
+	privKey, err := ecdh.X25519().GenerateKey(randomMock{})
 	if err != nil {
 		b.Fatalf("creating private key: %v", err)
 	}
