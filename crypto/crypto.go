@@ -95,18 +95,18 @@ func (c Crypto) Decrypt(privateKey []byte, ciphertext []byte) ([]byte, error) {
 		return nil, fmt.Errorf("invalid cipher")
 	}
 
-	pubKeySize := ciphertext[0]
+	pubKeySize := 32
 
 	if len(ciphertext) < int(pubKeySize)+1+nonceSize {
 		return nil, fmt.Errorf("invalid cipher")
 	}
 
-	ephemeralPublicKey, err := c.curve.NewPublicKey(ciphertext[1 : 1+pubKeySize])
+	ephemeralPublicKey, err := c.curve.NewPublicKey(ciphertext[0 : 0+pubKeySize])
 	if err != nil {
 		return nil, fmt.Errorf("invalid publick key in ciphertext: %w", err)
 	}
 
-	nonce := ciphertext[1+pubKeySize : 1+pubKeySize+nonceSize]
+	nonce := ciphertext[0+pubKeySize : 0+pubKeySize+nonceSize]
 
 	privKey, err := c.curve.NewPrivateKey(privateKey)
 	if err != nil {
@@ -134,7 +134,7 @@ func (c Crypto) Decrypt(privateKey []byte, ciphertext []byte) ([]byte, error) {
 		return nil, fmt.Errorf("create gcm mode: %w", err)
 	}
 
-	plaintext, err := mode.Open(nil, nonce, ciphertext[1+pubKeySize+nonceSize:], nil)
+	plaintext, err := mode.Open(nil, nonce, ciphertext[0+pubKeySize+nonceSize:], nil)
 	if err != nil {
 		return nil, fmt.Errorf("decrypting ciphertext: %w", err)
 	}
