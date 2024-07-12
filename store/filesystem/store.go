@@ -1,6 +1,6 @@
-// Package store is a storrage backend for vote-decrypt that uses the file
+// Package filesystem is a storrage backend for vote-decrypt that uses the file
 // system.
-package store
+package filesystem
 
 import (
 	"crypto/subtle"
@@ -47,7 +47,7 @@ func (s *Store) SaveKey(id string, key []byte) error {
 	defer s.mu.Unlock()
 
 	if s.path == "" {
-		return fmt.Errorf("No data dir provided. Check the environment variable VOTE_DECRYPT_STORE")
+		return fmt.Errorf("no data dir provided. Check the environment variable VOTE_DECRYPT_STORE")
 	}
 
 	if err := os.MkdirAll(s.path, os.ModePerm); err != nil {

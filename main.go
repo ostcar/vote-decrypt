@@ -13,7 +13,7 @@ import (
 	"github.com/OpenSlides/vote-decrypt/crypto"
 	"github.com/OpenSlides/vote-decrypt/decrypt"
 	"github.com/OpenSlides/vote-decrypt/grpc"
-	"github.com/OpenSlides/vote-decrypt/store"
+	"github.com/OpenSlides/vote-decrypt/store/filesystem"
 	"github.com/alecthomas/kong"
 	"golang.org/x/sys/unix"
 )
@@ -30,10 +30,10 @@ func main() {
 		err = runServer(ctx)
 
 	case "main-key <main-key>":
-		err = runMainKey(ctx)
+		err = runMainKey()
 
 	case "pub-key <main-key>":
-		err = runPubKey(ctx)
+		err = runPubKey()
 
 	default:
 		panic(fmt.Sprintf("Unknown command: %s", cliCtx.Command()))
@@ -76,7 +76,7 @@ func runServer(ctx context.Context) error {
 
 	decrypter := decrypt.New(
 		cryptoLib,
-		store.New(cli.Server.Store),
+		filesystem.New(cli.Server.Store),
 	)
 
 	addr := fmt.Sprintf(":%d", cli.Server.Port)
@@ -88,7 +88,7 @@ func runServer(ctx context.Context) error {
 	return nil
 }
 
-func runPubKey(ctx context.Context) error {
+func runPubKey() error {
 	key := make([]byte, 32)
 	if _, err := io.ReadFull(cli.PubKey.MainKey, key); err != nil {
 		return fmt.Errorf("reading key: %w", err)
@@ -110,7 +110,7 @@ func runPubKey(ctx context.Context) error {
 	return nil
 }
 
-func runMainKey(ctx context.Context) error {
+func runMainKey() error {
 	key := make([]byte, 32)
 	if _, err := io.ReadFull(rand.Reader, key); err != nil {
 		return fmt.Errorf("reading key: %w", err)
