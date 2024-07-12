@@ -2,6 +2,7 @@ package filesystem_test
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"io/fs"
 	"os"
@@ -13,11 +14,12 @@ import (
 )
 
 func TestSaveKey(t *testing.T) {
+	ctx := context.Background()
 	t.Run("valid", func(t *testing.T) {
 		tmpPath := t.TempDir()
 		s := filesystem.New(tmpPath)
 
-		if err := s.SaveKey("test/5", []byte("key")); err != nil {
+		if err := s.SaveKey(ctx, "test/5", []byte("key")); err != nil {
 			t.Fatalf("SaveKey: %v", err)
 		}
 
@@ -46,19 +48,21 @@ func TestSaveKey(t *testing.T) {
 		os.WriteFile(path.Join(tmpPath, "test_5.key"), []byte("old key"), 0400)
 		s := filesystem.New(tmpPath)
 
-		if err := s.SaveKey("test/5", []byte("key")); err != errorcode.Exist {
+		if err := s.SaveKey(ctx, "test/5", []byte("key")); err != errorcode.Exist {
 			t.Errorf("SaveKey returned error `%v`, expected `%v`", err, errorcode.Exist)
 		}
 	})
 }
 
 func TestLoadKey(t *testing.T) {
+	ctx := context.Background()
+
 	t.Run("valid", func(t *testing.T) {
 		tmpPath := t.TempDir()
 		os.WriteFile(path.Join(tmpPath, "test_5.key"), []byte("key"), 0400)
 		s := filesystem.New(tmpPath)
 
-		got, err := s.LoadKey("test/5")
+		got, err := s.LoadKey(ctx, "test/5")
 		if err != nil {
 			t.Fatalf("LoadKey returns: %v", err)
 		}
@@ -72,19 +76,21 @@ func TestLoadKey(t *testing.T) {
 		tmpPath := t.TempDir()
 		s := filesystem.New(tmpPath)
 
-		if _, err := s.LoadKey("test/5"); err != errorcode.NotExist {
+		if _, err := s.LoadKey(ctx, "test/5"); err != errorcode.NotExist {
 			t.Errorf("LoadKey retunred `%v`, expected `%v`", err, errorcode.NotExist)
 		}
 	})
 }
 
 func TestValidateSignature(t *testing.T) {
+	ctx := context.Background()
+
 	t.Run("firt time", func(t *testing.T) {
 		tmpPath := t.TempDir()
 		os.WriteFile(path.Join(tmpPath, "test_5.key"), []byte("key"), 0400)
 		s := filesystem.New(tmpPath)
 
-		if err := s.ValidateSignature("test/5", []byte("hash")); err != nil {
+		if err := s.ValidateSignature(ctx, "test/5", []byte("hash")); err != nil {
 			t.Errorf("ValidateSignature: %v", err)
 		}
 
@@ -114,7 +120,7 @@ func TestValidateSignature(t *testing.T) {
 		os.WriteFile(path.Join(tmpPath, "test_5.hash"), []byte("hash"), 0400)
 		s := filesystem.New(tmpPath)
 
-		if err := s.ValidateSignature("test/5", []byte("hash")); err != nil {
+		if err := s.ValidateSignature(ctx, "test/5", []byte("hash")); err != nil {
 			t.Fatalf("ValidateSignature: %v", err)
 		}
 	})
@@ -125,7 +131,7 @@ func TestValidateSignature(t *testing.T) {
 		os.WriteFile(path.Join(tmpPath, "test_5.hash"), []byte("hash"), 0400)
 		s := filesystem.New(tmpPath)
 
-		if err := s.ValidateSignature("test/5", []byte("invalid")); err != errorcode.Invalid {
+		if err := s.ValidateSignature(ctx, "test/5", []byte("invalid")); err != errorcode.Invalid {
 			t.Fatalf("ValidateSignature returned `%v`, expected `%s`", err, errorcode.Invalid)
 		}
 	})
@@ -134,13 +140,15 @@ func TestValidateSignature(t *testing.T) {
 		tmpPath := t.TempDir()
 		s := filesystem.New(tmpPath)
 
-		if err := s.ValidateSignature("test/5", []byte("hash")); err != errorcode.NotExist {
+		if err := s.ValidateSignature(ctx, "test/5", []byte("hash")); err != errorcode.NotExist {
 			t.Fatalf("ValidateSignature returned `%v`, expected `%s`", err, errorcode.NotExist)
 		}
 	})
 }
 
 func TestClearPoll(t *testing.T) {
+	ctx := context.Background()
+
 	t.Run("remove files", func(t *testing.T) {
 		tmpPath := t.TempDir()
 		keyFile := path.Join(tmpPath, "test_5.key")
@@ -149,7 +157,7 @@ func TestClearPoll(t *testing.T) {
 		os.WriteFile(hashFile, []byte("hash"), 0400)
 		s := filesystem.New(tmpPath)
 
-		if err := s.ClearPoll("test/5"); err != nil {
+		if err := s.ClearPoll(ctx, "test/5"); err != nil {
 			t.Fatalf("ClearPoll: %v", err)
 		}
 
@@ -166,7 +174,7 @@ func TestClearPoll(t *testing.T) {
 		tmpPath := t.TempDir()
 		s := filesystem.New(tmpPath)
 
-		if err := s.ClearPoll("test/5"); err != nil {
+		if err := s.ClearPoll(ctx, "test/5"); err != nil {
 			t.Fatalf("ClearPoll: %v", err)
 		}
 	})

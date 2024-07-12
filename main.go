@@ -14,6 +14,7 @@ import (
 	"github.com/OpenSlides/vote-decrypt/decrypt"
 	"github.com/OpenSlides/vote-decrypt/grpc"
 	"github.com/OpenSlides/vote-decrypt/store/filesystem"
+	"github.com/OpenSlides/vote-decrypt/store/postgres"
 	"github.com/alecthomas/kong"
 	"golang.org/x/sys/unix"
 )
@@ -49,8 +50,9 @@ var cli struct {
 	Server struct {
 		MainKey *os.File `arg:"" help:"Path to the main key file."`
 
-		Port  int    `help:"Port for the server. Defaults to 9014." short:"p" env:"VOTE_DECRYPT_PORT" default:"9014"`
-		Store string `help:"Path for the file system storage of poll keys." env:"VOTE_DECRYPT_STORE" default:"vote_data"`
+		Port         int    `help:"Port for the server. Defaults to 9014." short:"p" env:"VOTE_DECRYPT_PORT" default:"9014"`
+		Store        string `help:"Path for the file system storage of poll keys." env:"VOTE_DECRYPT_STORE" default:"vote_data"`
+		PostgresConf string `help:"Config for Postgres" env:"VOTE_DECRYPT_POSTGRES"`
 	} `cmd:"" help:"Starts the vote decrypt grpc server." default:"withargs"`
 
 	MainKey struct {
@@ -74,9 +76,24 @@ func runServer(ctx context.Context) error {
 
 	fmt.Printf("Public Main Key: %s\n", base64.StdEncoding.EncodeToString(cryptoLib.PublicMainKey()))
 
+	var store decrypt.Store
+	switch {
+	case cli.Server.PostgresConf != "":
+		pg, err := postgres.New(ctx, cli.Server.PostgresConf)
+		if err != nil {
+			return fmt.Errorf("connecting to postgres: %w", err)
+		}
+
+		store = pg
+
+	default:
+		store = filesystem.New(cli.Server.Store)
+
+	}
+
 	decrypter := decrypt.New(
 		cryptoLib,
-		filesystem.New(cli.Server.Store),
+		store,
 	)
 
 	addr := fmt.Sprintf(":%d", cli.Server.Port)
